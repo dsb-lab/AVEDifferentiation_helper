@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "AVEDifferentiation_helper"
+version = "0.1"
+description = "TBD"
+authors = [
+  { name = "Pablo Casani-Galdon", email = "pablocasani@gmail.com" },
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.7"
+dependencies = [
+    "numpy>=1.22",
+    "tifffile",
+    "scipy",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/PabloCasaniGaldon/AVEDifferentiation_helper"
+"Bug Tracker" = "https://github.com/PabloCasaniGaldon/AVEDifferentiation_helper/issues"
