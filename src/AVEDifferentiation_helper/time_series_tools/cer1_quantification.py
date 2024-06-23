@@ -88,23 +88,101 @@ def compute_cer1_nuc_background(t, channel1, channel2, CTB, ntiles=10, sigma=0, 
 
     return cer1_background, nuc_background, tile_sctak_return
 
-def quanfity_cer1_nuc(CER1, NUC, t,  channel1, channel2, CTB, cer1_background, nuc_background, sigma=0):
+
+def quantify_mean_nuc(CTB, nuc_background, max_time=None, sigma=0, norm_back=False):
+    if max_time is None:
+        max_time=CTB.times
+    
+    mean_nucs = []
+    for t, labels in enumerate(CTB.unique_labels_T[:max_time]):
+        if norm_back:
+            stack_nuc_wo_background = gaussian_filter(CTB.hyperstack[t,0,0], sigma) - nuc_background
+        else:
+            stack_nuc_wo_background = gaussian_filter(CTB.hyperstack[t,0,0], sigma)
+        nucs = []
+        for lab in labels:
+            cell = CTB._get_cell(lab)
+            
+            tid = cell.times.index(t)
+            mask = cell.masks[tid][0]
+                           
+            nuc_val = np.mean(stack_nuc_wo_background[mask[:,1], mask[:,0]])               
+            nucs.append(nuc_val)
+
+        mean_nucs.append(np.mean(nucs))
+    
+    return mean_nucs
+
+def quantify_mean_cer1(CTB, nuc_background, cer1_background, max_time=None, sigma=0, norm_back=False, norm_nuc=False):
+    if max_time is None:
+        max_time=CTB.times
+    
+    mean_nucs = []
+    mean_cer1s = []
+    for t, labels in enumerate(CTB.unique_labels_T[:max_time]):
+        if norm_back:
+            stack_nuc_wo_background = gaussian_filter(CTB.hyperstack[t,0,0], sigma) - nuc_background
+            stack_cer1_wo_background = gaussian_filter(CTB.hyperstack[t,0,1], sigma) - cer1_background
+        else:
+            stack_nuc_wo_background = gaussian_filter(CTB.hyperstack[t,0,0], sigma)
+            stack_cer1_wo_background = gaussian_filter(CTB.hyperstack[t,0,1], sigma)
+            
+        nucs = []
+        for lab in labels:
+            cell = CTB._get_cell(lab)
+            
+            tid = cell.times.index(t)
+            mask = cell.masks[tid][0]
+                           
+            nuc_val = np.mean(stack_nuc_wo_background[mask[:,1], mask[:,0]])     
+            nucs.append(nuc_val)
+
+        mean_nucs.append(np.mean(nucs))
+
+        cer1 = []
+        for lab in labels:
+            cell = CTB._get_cell(lab)
+            
+            tid = cell.times.index(t)
+            mask = cell.masks[tid][0]
+            
+            nuc_val = np.mean(stack_nuc_wo_background[mask[:,1], mask[:,0]])     
+            cer1_val = np.mean(stack_cer1_wo_background[mask[:,1], mask[:,0]])               
+          
+            mean_nuc = np.mean(mean_nucs)
+            if norm_nuc:
+                cer1.append(mean_nuc*cer1_val/nuc_val)
+            else:
+                cer1.append(cer1_val)
+                
+        mean_cer1s.append(np.mean(cer1))
+
+    return mean_nucs, mean_cer1s
+
+def quanfity_cer1_nuc(CER1, NUC, t,  channel1, channel2, CTB, cer1_background, nuc_background, sigma=0, norm_back=False, norm_nuc=False):
     
     if hasattr(t, '__iter__'):
         times = t
     else: 
         times = [t]
-       
-    stack_nuc_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel1], sigma) - nuc_background for _t in times]
-    stack_cer1_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel2], sigma) - cer1_background for _t in times]
-
+    
+    if norm_nuc:
+        mean_nucs = quantify_mean_nuc(CTB, nuc_background, sigma=sigma)
+    
+    if norm_back:       
+        stack_nuc_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel1], sigma) - nuc_background for _t in times]
+        stack_cer1_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel2], sigma) - cer1_background for _t in times]
+    else:
+        stack_nuc_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel1], sigma) for _t in times]
+        stack_cer1_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel2], sigma) for _t in times]
+        
     for cell in CTB.jitcells:
         cer1 = []
         nuc = []
         for tid, _t in enumerate(cell.times):
             
             if _t not in times: continue
-
+ 
             mask = cell.masks[tid][0]
             
             t_stack = times.index(_t)
@@ -113,22 +191,35 @@ def quanfity_cer1_nuc(CER1, NUC, t,  channel1, channel2, CTB, cer1_background, n
             cer1_val = np.mean(stack_cer1_wo_background[t_stack][mask[:,1], mask[:,0]]) 
             
             nuc.append(nuc_val)
-            cer1.append(cer1_val)
+            if norm_nuc:
+                mean_nuc = np.mean(mean_nucs)
+                # mean_nuc = mean_nucs[_t]
+                cer1.append(mean_nuc*cer1_val/nuc_val)
+            else:
+                cer1.append(cer1_val)
 
         CER1.append(cer1)
         NUC.append(nuc)
+
     return 
 
-def quanfity_cer1_nuc_dict(CER1, NUC, t,  channel1, channel2, CTB, cer1_background, nuc_background, sigma=0):
+def quanfity_cer1_nuc_dict(CER1, NUC, t,  channel1, channel2, CTB, cer1_background, nuc_background, sigma=0, norm_back=False, norm_nuc=False):
     
     if hasattr(t, '__iter__'):
         times = t
     else: 
         times = [t]
-    
-    stack_nuc_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel1], sigma) - nuc_background for _t in times]
-    stack_cer1_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel2], sigma) - cer1_background for _t in times]
 
+    if norm_nuc:
+        mean_nucs = quantify_mean_nuc(CTB, nuc_background, sigma=sigma)
+    
+    if norm_back:       
+        stack_nuc_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel1], sigma) - nuc_background for _t in times]
+        stack_cer1_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel2], sigma) - cer1_background for _t in times]
+    else:
+        stack_nuc_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel1], sigma) for _t in times]
+        stack_cer1_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel2], sigma) for _t in times]
+        
     for cell in CTB.jitcells:
         cer1 = []
         nuc = []
@@ -144,8 +235,13 @@ def quanfity_cer1_nuc_dict(CER1, NUC, t,  channel1, channel2, CTB, cer1_backgrou
             cer1_val = np.mean(stack_cer1_wo_background[t_stack][mask[:,1], mask[:,0]]) 
 
             nuc.append(nuc_val)
-            cer1.append(cer1_val)
-
+            if norm_nuc:
+                mean_nuc = np.mean(mean_nucs)
+                # mean_nuc = mean_nucs[_t]
+                cer1.append(mean_nuc*cer1_val/nuc_val)
+            else:
+                cer1.append(cer1_val)
+                
         CER1[cell.label] = cer1
         NUC[cell.label] = nuc
         
