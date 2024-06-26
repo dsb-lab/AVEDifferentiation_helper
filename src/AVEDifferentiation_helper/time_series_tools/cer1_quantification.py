@@ -3,6 +3,7 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 
 from .general_tools import compute_distance_xy, divide_line_1d
+from scipy.ndimage.filters import gaussian_filter1d
 
 
 def compute_cer1_nuc_background(t, channel1, channel2, CTB, ntiles=10, sigma=0, tile_stack_to_return=None):
@@ -159,7 +160,7 @@ def quantify_mean_cer1(CTB, nuc_background, cer1_background, max_time=None, sigm
 
     return mean_nucs, mean_cer1s
 
-def quanfity_cer1_nuc(CER1, NUC, t,  channel1, channel2, CTB, cer1_background, nuc_background, sigma=0, norm_back=False, norm_nuc=False):
+def quanfity_cer1_nuc(CER1, NUC, t,  channel1, channel2, CTB, cer1_background, nuc_background, sigma_image=0, sigmat=0, norm_back=False, norm_nuc=False):
     
     if hasattr(t, '__iter__'):
         times = t
@@ -167,14 +168,14 @@ def quanfity_cer1_nuc(CER1, NUC, t,  channel1, channel2, CTB, cer1_background, n
         times = [t]
     
     if norm_nuc:
-        mean_nucs = quantify_mean_nuc(CTB, nuc_background, sigma=sigma)
+        mean_nucs = quantify_mean_nuc(CTB, nuc_background, sigma=sigma_image)
     
     if norm_back:       
-        stack_nuc_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel1], sigma) - nuc_background for _t in times]
-        stack_cer1_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel2], sigma) - cer1_background for _t in times]
+        stack_nuc_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel1], sigma_image) - nuc_background for _t in times]
+        stack_cer1_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel2], sigma_image) - cer1_background for _t in times]
     else:
-        stack_nuc_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel1], sigma) for _t in times]
-        stack_cer1_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel2], sigma) for _t in times]
+        stack_nuc_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel1], sigma_image) for _t in times]
+        stack_cer1_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel2], sigma_image) for _t in times]
         
     for cell in CTB.jitcells:
         cer1 = []
@@ -198,12 +199,12 @@ def quanfity_cer1_nuc(CER1, NUC, t,  channel1, channel2, CTB, cer1_background, n
             else:
                 cer1.append(cer1_val)
 
-        CER1.append(cer1)
-        NUC.append(nuc)
+        CER1.append(gaussian_filter1d(cer1, sigmat))
+        NUC.append(gaussian_filter1d(nuc, sigmat))
 
     return 
 
-def quanfity_cer1_nuc_dict(CER1, NUC, t,  channel1, channel2, CTB, cer1_background, nuc_background, sigma=0, norm_back=False, norm_nuc=False):
+def quanfity_cer1_nuc_dict(CER1, NUC, t,  channel1, channel2, CTB, cer1_background, nuc_background, sigma_image=0, sigmat=0, norm_back=False, norm_nuc=False):
     
     if hasattr(t, '__iter__'):
         times = t
@@ -211,14 +212,14 @@ def quanfity_cer1_nuc_dict(CER1, NUC, t,  channel1, channel2, CTB, cer1_backgrou
         times = [t]
 
     if norm_nuc:
-        mean_nucs = quantify_mean_nuc(CTB, nuc_background, sigma=sigma)
+        mean_nucs = quantify_mean_nuc(CTB, nuc_background, sigma=sigma_image)
     
     if norm_back:       
-        stack_nuc_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel1], sigma) - nuc_background for _t in times]
-        stack_cer1_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel2], sigma) - cer1_background for _t in times]
+        stack_nuc_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel1], sigma_image) - nuc_background for _t in times]
+        stack_cer1_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel2], sigma_image) - cer1_background for _t in times]
     else:
-        stack_nuc_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel1], sigma) for _t in times]
-        stack_cer1_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel2], sigma) for _t in times]
+        stack_nuc_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel1], sigma_image) for _t in times]
+        stack_cer1_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel2], sigma_image) for _t in times]
         
     for cell in CTB.jitcells:
         cer1 = []
@@ -242,7 +243,24 @@ def quanfity_cer1_nuc_dict(CER1, NUC, t,  channel1, channel2, CTB, cer1_backgrou
             else:
                 cer1.append(cer1_val)
                 
-        CER1[cell.label] = cer1
-        NUC[cell.label] = nuc
+        CER1[cell.label] = gaussian_filter1d(cer1, sigmat)
+        NUC[cell.label] = gaussian_filter1d(nuc, sigmat)
         
     return 
+
+def quanfity_cer1_nuc_per_time(CER1, CTB, max_time, cer1_th):
+    cer1_positives = []
+    total_cells = []
+    for t, labels in enumerate(CTB.unique_labels_T[:max_time]):
+        cer1_positives.append(0)
+        total_cells.append(0)
+        for lab in labels:
+            total_cells[t] += 1
+            cer1_t = CER1[lab]
+            cell = CTB._get_cell(lab)
+            tid = cell.times.index(t)
+            cer1 = cer1_t[tid]
+            if cer1 > cer1_th:
+                cer1_positives[t] += 1
+                
+    return cer1_positives, total_cells
