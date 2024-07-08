@@ -1,4 +1,4 @@
 from .time_series_tools.general_tools import compute_distance_xy, divide_line_1d
-from .time_series_tools.cer1_quantification import compute_cer1_nuc_background, quanfity_cer1_nuc, quanfity_cer1_nuc_dict, quantify_mean_nuc, quantify_mean_cer1, quanfity_cer1_nuc_per_time
-from .time_series_tools.thresholding_tools import plot_triangle_thresholding, triangle_thresholding, perpendicular_line_equation, compute_histogram
+from .time_series_tools.cer1_quantification import compute_cer1_nuc_background, quanfity_cer1_nuc, quanfity_cer1_nuc_dict, quantify_mean_nuc, quantify_mean_cer1, quanfity_cer1_nuc_per_time, quanfity_cer1_nuc_per_time
+from .time_series_tools.thresholding_tools import plot_triangle_thresholding, triangle_thresholding, perpendicular_line_equation, compute_histogram, lineLineIntersection
 from .time_series_tools.lineage_trees_tools import assign_positions, get_longest_route, plot_vertical_gradient_line

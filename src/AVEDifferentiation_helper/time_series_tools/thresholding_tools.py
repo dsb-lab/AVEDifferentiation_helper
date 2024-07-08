@@ -94,7 +94,7 @@ def triangle_thresholding(hist):
     
     return threshold, peak_index, peak_value, slope
 
-def plot_triangle_thresholding(hist, bin_idx):
+def plot_triangle_thresholding(hist, bin_idx, ax=None):
 
     # Find the peak (maximum value) in the histogram
     peak_index = np.argmax(hist)
@@ -108,7 +108,8 @@ def plot_triangle_thresholding(hist, bin_idx):
     slope = (end_value - peak_value) / (end_index - peak_index)
     
     # Compute the line values
-    line_values = peak_value + slope * (np.arange(peak_index, end_index + 1) - peak_index)
+    line_step = 0.1
+    line_values = peak_value + slope * (np.arange(peak_index, end_index + line_step, line_step) - peak_index)
     
     # Perpendicular distance at the threshold
     slope_perpendicular, intercept_perpendicular = perpendicular_line_equation(slope, [peak_index, peak_value], [bin_idx, hist[bin_idx]])
@@ -122,20 +123,33 @@ def plot_triangle_thresholding(hist, bin_idx):
     intersection = lineLineIntersection(A, B, C, D)
 
     # Plot histogram
-    plt.figure(figsize=(10, 6))
-    plt.bar(range(len(hist)), hist, width=1, edgecolor='k', alpha=0.6, label='Histogram')
-    
-    # Plot the line from peak to end
-    plt.plot(range(peak_index, end_index + 1), line_values, 'r--', lw=2, label='Line from Peak to End')
-    
-    # Plot the perpendicular line at the threshold
-    plt.plot([bin_idx, intersection[0]], [hist[bin_idx], intersection[1]], 'g-', lw=2, label='Perpendicular Distance')
-    
-    plt.xlabel('Bin')
-    plt.ylabel('Frequency')
-    plt.title('Triangle Thresholding')
-    plt.legend()
-    plt.grid()
-    plt.axis('equal')
-    plt.show()
+    if ax is None:
+        plt.figure(figsize=(10, 6))
+        plt.bar(range(len(hist)), hist, width=1, edgecolor='k', alpha=0.6, label='Histogram')
+        
+        # Plot the line from peak to end
+        plt.plot(range(peak_index, end_index + 1), line_values, 'r--', lw=2, label='Line from Peak to End')
+        
+        # Plot the perpendicular line at the threshold
+        plt.plot([bin_idx, intersection[0]], [hist[bin_idx], intersection[1]], 'g-', lw=2, label='Perpendicular Distance')
+        
+        plt.xlabel('Bin')
+        plt.ylabel('Frequency')
+        plt.title('Triangle Thresholding')
+        plt.legend()
+        plt.grid()
+        plt.axis('equal')
+        plt.show()
+    else:
+                # Plot histogram
+        ax.bar(range(len(hist)), hist, width=1, color=[0.7, 0.7, 0.0], edgecolor='k', alpha=0.6, label='Histogram')
 
+        # Plot the line from peak to end
+        ax.plot(range(peak_index, end_index + 1), line_values, 'r--', lw=2, label='Line from Peak to End')
+
+        # Plot the perpendicular line at the threshold
+        ax.plot([bin_idx, intersection[0]], [hist[bin_idx], intersection[1]], 'g-', lw=2, label='Perpendicular Distance')
+
+        ax.set_xlabel('Bin')
+        ax.set_ylabel('Frequency')
+        ax.set_title('Triangle Thresholding')

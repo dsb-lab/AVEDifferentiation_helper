@@ -36,4 +36,4 @@ def plot_vertical_gradient_line(ax, x, cmap, norm, cell, values, linewidth=5):
         value_start = values[i]
         value_end = values[i+1]
         color = cmap(norm(value_start + (value_end - value_start) * (i / (num_segments - 1))))
-        ax.plot([x, x], [y_values[i], y_values[i + 1]], color=color, linewidth=linewidth, zorder=1)
+        _ = ax.plot([x, x], [y_values[i], y_values[i + 1]], color=color, linewidth=linewidth, zorder=1)
