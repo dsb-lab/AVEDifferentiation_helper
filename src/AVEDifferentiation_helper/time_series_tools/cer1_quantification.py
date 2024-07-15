@@ -236,7 +236,11 @@ def quanfity_cer1_nuc_dict(CER1, NUC, t,  channel1, channel2, CTB, cer1_backgrou
     else:
         stack_nuc_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel1], sigma_image) for _t in times]
         stack_cer1_wo_background = [gaussian_filter(CTB.hyperstack[_t,0,channel2], sigma_image) for _t in times]
-        
+    
+    
+    # mins_stack = [np.percentile(CTB.hyperstack[_t,0,channel1], 0.01) for _t in times]
+    # stack_nuc_wo_background = [CTB.hyperstack[_t,0,channel1] - mins_stack[_t] for _t in times]
+
     for cell in CTB.jitcells:
         cer1 = []
         nuc = []
